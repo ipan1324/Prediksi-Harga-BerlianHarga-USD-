@@ -305,6 +305,12 @@
             <p>{{ prediction_text }}</p>
         </div>
         {% endif %}
+
+        {% if error_text %}
+        <div class="result-container" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2);">
+            <p style="color: var(--error);">{{ error_text }}</p>
+        </div>
+        {% endif %}
     </div>
 </body>
 </html>
