@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diamond Price Prediction</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --background: #0F172A;
+            --surface: #1E293B;
+            --surface-hover: #334155;
+            --text-primary: #F8FAFC;
+            --text-secondary: #94A3B8;
+            --border: #334155;
+            --error: #EF4444;
+            --success: #10B981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(79, 70, 229, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.15) 0%, transparent 50%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #F8FAFC 0%, #94A3B8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        form {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: color 0.2s ease;
+        }
+
+        .form-group:focus-within label {
+            color: var(--primary);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            appearance: none;
+        }
+
+        /* Custom dropdown arrow */
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394A3B8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1.2rem;
+            padding-right: 3rem;
+        }
+
+        select option {
+            background-color: var(--surface);
+            color: var(--text-primary);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        input::placeholder {
+            color: rgba(148, 163, 184, 0.5);
+        }
+
+        button {
+            grid-column: 1 / -1;
+            margin-top: 1rem;
+            padding: 1.25rem;
+            background: linear-gradient(135deg, var(--primary) 0%, #312E81 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.3);
+        }
+
+        button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px -5px rgba(79, 70, 229, 0.4);
+        }
+
+        button:hover::after {
+            opacity: 1;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .result-container {
+            margin-top: 2rem;
+            padding: 2rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 16px;
+            text-align: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .result-container p {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--success);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @media (max-width: 640px) {
+            form {
+                grid-template-columns: 1fr;
+            }
+            .container {
+                padding: 2rem 1.5rem;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Diamond Value Estimator</h1>
+            <p>Enter the diamond characteristics to predict its market value</p>
+        </div>
+
+        <form action="{{ url_for('predict')}}" method="post">
+            <div class="form-group">
+                <label for="carat">Carat Weight</label>
+                <input type="number" step="0.01" name="carat" id="carat" placeholder="e.g. 0.5" required="required" />
+            </div>
+
+            <div class="form-group">
+                <label for="cut">Cut Quality</label>
+                <select name="cut" id="cut" required="required">
+                    <option value="2">Ideal (2)</option>
+                    <option value="3">Premium (3)</option>
+                    <option value="4">Very Good (4)</option>
+                    <option value="1">Good (1)</option>
+                    <option value="0">Fair (0)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="color">Color Grade</label>
+                <select name="color" id="color" required="required">
+                    <option value="0">D (0) - Colorless</option>
+                    <option value="1">E (1) - Colorless</option>
+                    <option value="2">F (2) - Colorless</option>
+                    <option value="3">G (3) - Near Colorless</option>
+                    <option value="4">H (4) - Near Colorless</option>
+                    <option value="5">I (5) - Near Colorless</option>
+                    <option value="6">J (6) - Near Colorless</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="clarity">Clarity</label>
+                <select name="clarity" id="clarity" required="required">
+                    <option value="1">IF (1) - Internally Flawless</option>
+                    <option value="6">VVS1 (6) - Very Very Slightly Included</option>
+                    <option value="7">VVS2 (7) - Very Very Slightly Included</option>
+                    <option value="4">VS1 (4) - Very Slightly Included</option>
+                    <option value="5">VS2 (5) - Very Slightly Included</option>
+                    <option value="2">SI1 (2) - Slightly Included</option>
+                    <option value="3">SI2 (3) - Slightly Included</option>
+                    <option value="0">I1 (0) - Included</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="depth">Total Depth Percentage</label>
+                <input type="number" step="0.1" name="depth" id="depth" placeholder="e.g. 61.5" required="required" />
+            </div>
+
+            <div class="form-group">
+                <label for="table">Table Percentage</label>
+                <input type="number" step="0.1" name="table" id="table" placeholder="e.g. 55.0" required="required" />
+            </div>
+
+            <div class="form-group">
+                <label for="x">Length (x in mm)</label>
+                <input type="number" step="0.01" name="x" id="x" placeholder="e.g. 5.1" required="required" />
+            </div>
+
+            <div class="form-group">
+                <label for="y">Width (y in mm)</label>
+                <input type="number" step="0.01" name="y" id="y" placeholder="e.g. 5.1" required="required" />
+            </div>
+
+            <div class="form-group">
+                <label for="z">Depth (z in mm)</label>
+                <input type="number" step="0.01" name="z" id="z" placeholder="e.g. 3.1" required="required" />
+            </div>
+
+            <button type="submit">Predict Diamond Price</button>
+        </form>
+
+        {% if prediction_text %}
+        <div class="result-container">
+            <p>{{ prediction_text }}</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
