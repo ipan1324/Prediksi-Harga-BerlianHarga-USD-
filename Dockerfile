@@ -12,12 +12,8 @@ COPY . .
 # Set working directory to app for Flask
 WORKDIR /app/app
 
-# Set environment variables
-ENV FLASK_APP=app.py
-ENV FLASK_RUN_HOST=0.0.0.0
-
 # Expose port
 EXPOSE 5000
 
-# Run the application
-CMD ["flask", "run"]
+# Run the application with Gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
