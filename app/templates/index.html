@@ -208,6 +208,16 @@
             to { opacity: 1; transform: scale(1); }
         }
 
+        .chart-container {
+            margin-top: 2rem;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 1.5rem;
+            width: 100%;
+            animation: fadeIn 0.6s ease-out;
+        }
+
         @media (max-width: 640px) {
             form {
                 grid-template-columns: 1fr;
@@ -313,6 +323,90 @@
         <div class="result-container">
             <p>{{ prediction_text }}</p>
         </div>
+        {% endif %}
+
+        {% if all_predictions %}
+        <div class="chart-container">
+            <h3 style="margin-bottom: 1rem; font-size: 1.1rem; color: var(--text-secondary); text-align: center;">Perbandingan Estimasi Harga Antar Model AI</h3>
+            <canvas id="comparisonChart" style="max-height: 250px;"></canvas>
+        </div>
+        
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const ctx = document.getElementById('comparisonChart').getContext('2d');
+                
+                const lrPred = {{ all_predictions.linear_regression | tojson }};
+                const annPred = {{ all_predictions.ann | tojson }};
+                const rfPred = {{ all_predictions.random_forest | tojson }};
+                const selectedModel = {{ selected_model | tojson }};
+                
+                // Color configuration: Highlight the selected model
+                const bgColors = [
+                    selectedModel === 'linear_regression' ? '#4F46E5' : 'rgba(79, 70, 229, 0.2)', // Primary Indigo
+                    selectedModel === 'ann' ? '#EC4899' : 'rgba(236, 72, 153, 0.2)',              // Pink
+                    selectedModel === 'random_forest' ? '#10B981' : 'rgba(16, 185, 129, 0.2)'      // Emerald
+                ];
+                
+                const borderColors = [
+                    '#4F46E5',
+                    '#EC4899',
+                    '#10B981'
+                ];
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Linear Regression', 'Neural Network (ANN)', 'Random Forest'],
+                        datasets: [{
+                            label: 'Estimasi Harga ($)',
+                            data: [lrPred, annPred, rfPred],
+                            backgroundColor: bgColors,
+                            borderColor: borderColors,
+                            borderWidth: 1.5,
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'Estimasi Harga: $' + context.raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.05)'
+                                },
+                                ticks: {
+                                    color: '#94A3B8',
+                                    callback: function(value) {
+                                        return '$' + value;
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: '#94A3B8'
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        </script>
         {% endif %}
 
         {% if error_text %}

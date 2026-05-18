@@ -48,9 +48,12 @@ def predict():
         # Scale data
         data_scaled = scaler.transform(data)
 
-        # Predict
-        model = models[model_type]
-        prediction = model.predict(data_scaled)
+        # Get all predictions for comparison
+        all_preds = {}
+        for m_name, m_obj in models.items():
+            pred_val = m_obj.predict(data_scaled)[0]
+            # Ensure price isn't negative
+            all_preds[m_name] = max(0.0, float(pred_val))
 
         model_names = {
             'linear_regression': 'Linear Regression',
@@ -58,9 +61,13 @@ def predict():
             'random_forest': 'Random Forest'
         }
 
+        selected_prediction = all_preds[model_type]
+
         return render_template(
             "index.html",
-            prediction_text=f'Prediksi Harga Berlian ({model_names[model_type]}): ${prediction[0]:,.2f}'
+            prediction_text=f'Prediksi Harga Berlian ({model_names[model_type]}): ${selected_prediction:,.2f}',
+            all_predictions=all_preds,
+            selected_model=model_type
         )
     except Exception as e:
         return render_template(
