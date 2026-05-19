@@ -10,15 +10,11 @@ app = Flask(__name__)
 # =========================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Root project directory
-ROOT_DIR = os.path.dirname(BASE_DIR)
-
 # Models directory
-MODEL_DIR = os.path.join(ROOT_DIR, "models")
+MODEL_DIR = os.path.join(BASE_DIR, "models")
 
 # Debug Railway
 print("BASE_DIR:", BASE_DIR)
-print("ROOT_DIR:", ROOT_DIR)
 print("MODEL_DIR:", MODEL_DIR)
 
 # Check files inside models folder
