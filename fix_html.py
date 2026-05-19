@@ -84,39 +84,6 @@ extra_css = """
         transform: translateY(0);
     }
 }
-
-label.form-label {
-    font-size: 0.88rem;
-    color: #cbd5e1;
-}
-
-footer {
-    padding: 2.5rem 0;
-    font-size: 0.9rem;
-}
-
-.navbar-brand {
-    letter-spacing: -0.5px;
-}
-
-.badge {
-    font-size: 0.78rem;
-    padding: 0.45em 0.85em;
-    border-radius: 8px;
-}
-
-::-webkit-scrollbar {
-    width: 6px;
-}
-
-::-webkit-scrollbar-track {
-    background: #080B10;
-}
-
-::-webkit-scrollbar-thumb {
-    background: rgba(99,102,241,0.4);
-    border-radius: 3px;
-}
 """
 
 # Tambahkan CSS sebelum </style>
@@ -132,7 +99,6 @@ html = html.replace(
     'class="bi bi-gem text-primary gem-hero"'
 )
 
-# Simpan file
 with open('templates/index.html', 'w', encoding='utf-8') as f:
     f.write(html)
 
