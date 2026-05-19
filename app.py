@@ -31,21 +31,23 @@ scaler = joblib.load(
 )
 
 # =========================
-# LOAD MODELS
+# LOAD MODELS (Safe Load)
 # =========================
-models = {
-    'linear_regression': joblib.load(
-        os.path.join(MODEL_DIR, "linear_regression_model.pkl")
-    ),
-
-    'ann': joblib.load(
-        os.path.join(MODEL_DIR, "ann_model.pkl")
-    ),
-    
-    'random_forest': joblib.load(
-        os.path.join(MODEL_DIR, "random_forest_model.pkl")
-    )
-}
+models = {}
+for model_key, model_file in [
+    ('linear_regression', "linear_regression_model.pkl"),
+    ('ann', "ann_model.pkl"),
+    ('random_forest', "random_forest_model.pkl")
+]:
+    model_path = os.path.join(MODEL_DIR, model_file)
+    if os.path.exists(model_path):
+        try:
+            models[model_key] = joblib.load(model_path)
+            print(f"Successfully loaded model: {model_key}")
+        except Exception as e:
+            print(f"Error loading model {model_key}: {e}")
+    else:
+        print(f"Model file missing (skipped): {model_path}")
 
 # =========================
 # MODEL METRICS
@@ -97,6 +99,17 @@ def predict():
 
         model_type = form_data.get('model_type', 'random_forest')
 
+        # Fallback if requested model is not loaded (e.g. missing random_forest on cloud deployment)
+        if model_type not in models:
+            if 'ann' in models:
+                model_type = 'ann'
+            elif 'linear_regression' in models:
+                model_type = 'linear_regression'
+            elif models:
+                model_type = list(models.keys())[0]
+            else:
+                raise Exception("No machine learning models are loaded on the server.")
+
         # =========================
         # INPUT DATA
         # =========================
@@ -146,16 +159,18 @@ def predict():
         all_predictions = {}
 
         for model_name, model in models.items():
+            try:
+                prediction = model.predict(data_scaled)[0]
+                all_predictions[model_name] = max(0.0, float(prediction))
+            except Exception as e:
+                print(f"Error predicting with {model_name}: {e}")
 
-            prediction = model.predict(data_scaled)[0]
+        selected_prediction = all_predictions.get(model_type, 0.0)
 
-            # Prevent negative values
-            all_predictions[model_name] = max(
-                0.0,
-                float(prediction)
-            )
-
-        selected_prediction = all_predictions[model_type]
+        # Fallback values for models not loaded, so frontend chart doesn't break
+        for m_key in ['linear_regression', 'ann', 'random_forest']:
+            if m_key not in all_predictions:
+                all_predictions[m_key] = selected_prediction
 
         # =========================
         # ERROR MARGINS
