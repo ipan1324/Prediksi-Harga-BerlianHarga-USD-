@@ -1,42 +1,244 @@
-from flask import Flask
-from flask import render_template
-from flask import request
-
+from flask import Flask, render_template, request, jsonify
 import joblib
-import numpy as np
+import pandas as pd
+import os
 
 app = Flask(__name__)
 
-model = joblib.load('models/linear_regression_model.pkl')
-scaler = joblib.load('models/scaler.pkl')
+# =========================
+# BASE DIRECTORY
+# =========================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# Models directory
+MODEL_DIR = os.path.join(BASE_DIR, "models")
+
+# Debug
+print("BASE_DIR:", BASE_DIR)
+print("MODEL_DIR:", MODEL_DIR)
+
+# Check files inside models folder
+if os.path.exists(MODEL_DIR):
+    print("MODEL FILES:", os.listdir(MODEL_DIR))
+else:
+    print("MODELS FOLDER NOT FOUND!")
+
+# =========================
+# LOAD SCALER
+# =========================
+scaler = joblib.load(
+    os.path.join(MODEL_DIR, "scaler.pkl")
+)
+
+# =========================
+# LOAD MODELS
+# =========================
+models = {
+    'linear_regression': joblib.load(
+        os.path.join(MODEL_DIR, "linear_regression_model.pkl")
+    ),
+
+    'ann': joblib.load(
+        os.path.join(MODEL_DIR, "ann_model.pkl")
+    ),
+    
+    'random_forest': joblib.load(
+        os.path.join(MODEL_DIR, "random_forest_model.pkl")
+    )
+}
+
+# =========================
+# MODEL METRICS
+# =========================
+model_metrics = {
+    'linear_regression': {
+        'r2': 0.8851,
+        'mae': 802.45,
+        'mse': 1827401.32,
+        'confidence': 'Low (±15%)'
+    },
+
+    'ann': {
+        'r2': 0.9771,
+        'mae': 362.18,
+        'mse': 365281.90,
+        'confidence': 'Medium (±8%)'
+    },
+
+    'random_forest': {
+        'r2': 0.9815,
+        'mae': 272.84,
+        'mse': 294800.0,
+        'confidence': 'High Confidence'
+    }
+}
+
+# =========================
+# HOME
+# =========================
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return render_template("index.html")
 
+# =========================
+# PREDICT
+# =========================
 @app.route('/predict', methods=['POST'])
 def predict():
+    try:
 
-    carat = float(request.form['carat'])
-    cut = float(request.form['cut'])
-    color = float(request.form['color'])
-    clarity = float(request.form['clarity'])
-    depth = float(request.form['depth'])
-    table = float(request.form['table'])
-    x = float(request.form['x'])
-    y = float(request.form['y'])
-    z = float(request.form['z'])
+        # Check AJAX / JSON request
+        is_json = (
+            request.is_json or
+            request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        )
 
-    data = np.array([[carat, cut, color, clarity, depth, table, x, y, z]])
+        form_data = request.get_json() if request.is_json else request.form
 
-    scaled = scaler.transform(data)
+        model_type = form_data.get('model_type', 'random_forest')
 
-    prediction = model.predict(scaled)[0]
+        # =========================
+        # INPUT DATA
+        # =========================
+        carat = float(form_data.get('carat'))
+        cut = float(form_data.get('cut'))
+        color = float(form_data.get('color'))
+        clarity = float(form_data.get('clarity'))
+        depth = float(form_data.get('depth'))
+        table = float(form_data.get('table'))
+        x = float(form_data.get('x'))
+        y = float(form_data.get('y'))
+        z = float(form_data.get('z'))
 
-    return render_template(
-        'result.html',
-        prediction=round(prediction, 2)
+        # =========================
+        # DATAFRAME
+        # =========================
+        data = pd.DataFrame([[
+            carat,
+            cut,
+            color,
+            clarity,
+            depth,
+            table,
+            x,
+            y,
+            z
+        ]], columns=[
+            'carat',
+            'cut',
+            'color',
+            'clarity',
+            'depth',
+            'table',
+            'x',
+            'y',
+            'z'
+        ])
+
+        # =========================
+        # SCALE DATA
+        # =========================
+        data_scaled = scaler.transform(data)
+
+        # =========================
+        # PREDICTIONS
+        # =========================
+        all_predictions = {}
+
+        for model_name, model in models.items():
+
+            prediction = model.predict(data_scaled)[0]
+
+            # Prevent negative values
+            all_predictions[model_name] = max(
+                0.0,
+                float(prediction)
+            )
+
+        selected_prediction = all_predictions[model_type]
+
+        # =========================
+        # ERROR MARGINS
+        # =========================
+        error_margins = {
+            'linear_regression': 0.15,
+            'ann': 0.08,
+            'random_forest': 0.05
+        }
+
+        margin = error_margins.get(model_type, 0.10)
+
+        lower_bound = max(
+            0.0,
+            selected_prediction * (1 - margin)
+        )
+
+        upper_bound = (
+            selected_prediction * (1 + margin)
+        )
+
+        # =========================
+        # MODEL NAMES
+        # =========================
+        model_names = {
+            'linear_regression': 'Linear Regression',
+            'ann': 'Artificial Neural Network (MLP)',
+            'random_forest': 'Random Forest'
+        }
+
+        response_data = {
+            'success': True,
+            'prediction': selected_prediction,
+            'lower_bound': lower_bound,
+            'upper_bound': upper_bound,
+            'all_predictions': all_predictions,
+            'selected_model': model_type,
+            'selected_model_name': model_names[model_type],
+            'confidence_level': model_metrics[model_type]['confidence']
+        }
+
+        # JSON response
+        if is_json:
+            return jsonify(response_data)
+
+        # HTML response (fallback)
+        return render_template(
+            "result.html",
+            prediction=round(selected_prediction, 2)
+        )
+
+    except Exception as e:
+
+        # JSON error response
+        if (
+            request.is_json or
+            request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        ):
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 400
+
+        # HTML error response
+        return render_template(
+            "index.html",
+            error_text=f"Terjadi kesalahan: {str(e)}"
+        )
+
+# =========================
+# METRICS API
+# =========================
+@app.route('/metrics')
+def get_metrics():
+    return jsonify(model_metrics)
+
+# =========================
+# MAIN
+# =========================
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(
+        host="0.0.0.0",
+        port=port,
+        debug=True
     )
-
-if __name__ == '__main__':
-    app.run(debug=True)
