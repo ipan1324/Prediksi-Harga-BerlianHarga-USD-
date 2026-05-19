@@ -54,3 +54,145 @@ with open('app/templates/index.html', 'w', encoding='utf-8') as f:
     f.write(html)
 
 print('Done! HTML polished successfully.')
+
+with open('app/templates/index.html', 'r', encoding='utf-8') as f:
+    html = f.read()
+
+extra_css = """
+/* ===== POLISH ===== */
+
+.display-4 {
+    font-size: 2.8rem !important;
+    font-weight: 800 !important;
+}
+
+.hero-title {
+    font-size: 3rem;
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2rem;
+    }
+}
+
+.gem-hero {
+    animation: float 4s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%,100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-12px);
+    }
+}
+
+#resPrice {
+    font-size: 2.8rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff 40%, #a5b4fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -1px;
+}
+
+.range-fill {
+    animation: fillBar 1.2s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+
+@keyframes fillBar {
+    from {
+        width: 0%;
+    }
+
+    to {
+        width: 100%;
+    }
+}
+
+.stat-card,
+.stat-card-accent,
+.stat-card-success {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.stat-card:hover,
+.stat-card-accent:hover,
+.stat-card-success:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+}
+
+.spa-section.active {
+    animation: fadeSection 0.35s ease forwards;
+}
+
+@keyframes fadeSection {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+label.form-label {
+    font-size: 0.88rem;
+    color: #cbd5e1;
+}
+
+footer {
+    padding: 2.5rem 0;
+    font-size: 0.9rem;
+}
+
+.navbar-brand {
+    letter-spacing: -0.5px;
+}
+
+/* Better badge */
+.badge {
+    font-size: 0.78rem;
+    padding: 0.45em 0.85em;
+    border-radius: 8px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #080B10;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(99,102,241,0.4);
+    border-radius: 3px;
+}
+"""
+
+# Insert extra CSS before </style>
+html = html.replace(
+    "</style>",
+    extra_css + "\n</style>",
+    1
+)
+
+# Add gem animation
+html = html.replace(
+    'class="bi bi-gem text-primary"\n                        style="font-size: 15rem;',
+    'class="bi bi-gem text-primary gem-hero"\n                        style="font-size: 13rem;'
+)
+
+# Save updated file
+with open('app/templates/index.html', 'w', encoding='utf-8') as f:
+    f.write(html)
+
+print("Done! HTML polished successfully.")
