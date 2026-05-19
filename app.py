@@ -9,7 +9,23 @@ app = Flask(__name__)
 # BASE DIRECTORY
 # =========================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_DIR = os.path.join(BASE_DIR, "..", "models")
+
+# Root project directory
+ROOT_DIR = os.path.dirname(BASE_DIR)
+
+# Models directory
+MODEL_DIR = os.path.join(ROOT_DIR, "models")
+
+# Debug Railway
+print("BASE_DIR:", BASE_DIR)
+print("ROOT_DIR:", ROOT_DIR)
+print("MODEL_DIR:", MODEL_DIR)
+
+# Check files inside models folder
+if os.path.exists(MODEL_DIR):
+    print("MODEL FILES:", os.listdir(MODEL_DIR))
+else:
+    print("MODELS FOLDER NOT FOUND!")
 
 # =========================
 # LOAD SCALER
@@ -29,11 +45,8 @@ models = {
     'ann': joblib.load(
         os.path.join(MODEL_DIR, "ann_model.pkl")
     )
-    
-    # Random Forest dihapus karena file terlalu besar untuk Railway/GitHub
-    # 'random_forest': joblib.load(
-    #     os.path.join(MODEL_DIR, "random_forest_model.pkl")
-    # )
+
+    # Random Forest dihapus karena terlalu besar
 }
 
 # =========================
@@ -68,7 +81,8 @@ def home():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # Check request type
+
+        # Check AJAX / JSON request
         is_json = (
             request.is_json or
             request.headers.get('X-Requested-With') == 'XMLHttpRequest'
@@ -78,7 +92,9 @@ def predict():
 
         model_type = form_data.get('model_type', 'ann')
 
-        # Input data
+        # =========================
+        # INPUT DATA
+        # =========================
         carat = float(form_data.get('carat'))
         cut = float(form_data.get('cut'))
         color = float(form_data.get('color'))
@@ -89,7 +105,9 @@ def predict():
         y = float(form_data.get('y'))
         z = float(form_data.get('z'))
 
-        # Create dataframe
+        # =========================
+        # DATAFRAME
+        # =========================
         data = pd.DataFrame([[
             carat,
             cut,
@@ -112,21 +130,31 @@ def predict():
             'z'
         ])
 
-        # Scale input
+        # =========================
+        # SCALE DATA
+        # =========================
         data_scaled = scaler.transform(data)
 
-        # Predict all models
+        # =========================
+        # PREDICTIONS
+        # =========================
         all_predictions = {}
 
         for model_name, model in models.items():
-            pred = model.predict(data_scaled)[0]
 
-            # Prevent negative price
-            all_predictions[model_name] = max(0.0, float(pred))
+            prediction = model.predict(data_scaled)[0]
+
+            # Prevent negative values
+            all_predictions[model_name] = max(
+                0.0,
+                float(prediction)
+            )
 
         selected_prediction = all_predictions[model_type]
 
-        # Error margins
+        # =========================
+        # ERROR MARGINS
+        # =========================
         error_margins = {
             'linear_regression': 0.15,
             'ann': 0.08
@@ -143,7 +171,9 @@ def predict():
             selected_prediction * (1 + margin)
         )
 
-        # Display names
+        # =========================
+        # MODEL NAMES
+        # =========================
         model_names = {
             'linear_regression': 'Linear Regression',
             'ann': 'Artificial Neural Network (MLP)'
@@ -160,7 +190,7 @@ def predict():
             'confidence_level': model_metrics[model_type]['confidence']
         }
 
-        # AJAX / JSON response
+        # JSON response
         if is_json:
             return jsonify(response_data)
 
@@ -178,6 +208,7 @@ def predict():
 
     except Exception as e:
 
+        # JSON error response
         if (
             request.is_json or
             request.headers.get('X-Requested-With') == 'XMLHttpRequest'
@@ -187,6 +218,7 @@ def predict():
                 'error': str(e)
             }), 400
 
+        # HTML error response
         return render_template(
             "index.html",
             error_text=f"Terjadi kesalahan: {str(e)}"
@@ -203,6 +235,7 @@ def get_metrics():
 # MAIN
 # =========================
 if __name__ == "__main__":
+
     port = int(os.environ.get("PORT", 5000))
 
     app.run(
